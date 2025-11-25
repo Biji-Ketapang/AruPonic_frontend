@@ -11,7 +11,10 @@ const About = () => (
           <h1 className="text-3xl font-bold text-slate-800 dark:text-white">Tentang ARUPONIC</h1>
         </div>
         <p className="text-xl text-slate-600 dark:text-slate-300 max-w-4xl mx-auto leading-relaxed">
-          Mempercepat Revolusi <span className="font-semibold text-aruponic-green">Akuaponik</span> Digital dengan Teknologi IoT Presisi untuk Pertanian Berkelanjutan
+          Mempercepat Revolusi <span className="font-semibold text-aruponic-green">ARUPONIC</span> Digital dengan Teknologi IoT Presisi untuk
+        </p>
+        <p className="text-xl text-slate-600 dark:text-slate-300 max-w-4xl mx-auto leading-relaxed">
+          Pertanian yang Berkelanjutan.
         </p>
       </div>
 
