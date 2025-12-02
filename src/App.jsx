@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, lazy, Suspense } from "react";
 import {
   Droplets,
   Thermometer,
@@ -12,19 +12,21 @@ import SensorCard from "./components/SensorCard";
 import HistoryChart from "./components/HistoryChart";
 import PredictionPanel from "./components/PredictionPanel";
 import Sidebar from "./components/Sidebar";
-import About from "./pages/About";
-import AboutPopup from "./components/AboutPopup";
-import { getHistory, getPredictions } from "./lib/api";
+import Landing from "./pages/Landing";
+
+// Lazy load untuk halaman yang lebih berat
+const About = lazy(() => import("./pages/About"));
 
 function App() {
   const [darkMode, setDarkMode] = useState(true);
   const [history, setHistory] = useState([]);
   const [prediction, setPrediction] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [activePage, setActivePage] = useState("Home");
-  const [aboutPopupOpen, setAboutPopupOpen] = useState(false);
+  const [activePage, setActivePage] = useState("Landing");
   const [mounted, setMounted] = useState(false);
+  const [dataFetched, setDataFetched] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   // Set mounted untuk animasi
   useEffect(() => {
@@ -40,29 +42,74 @@ function App() {
     }
   }, [darkMode]);
 
-  // Fetch Data
-  const fetchData = async () => {
+  // Fetch Data function
+  const fetchData = useCallback(async () => {
+    if (activePage !== "Home" || dataFetched) return;
+    
+    setLoading(true);
     try {
+      const apiModule = await import("./lib/api");
       const [histRes, predRes] = await Promise.all([
-        getHistory(),
-        getPredictions(),
+        apiModule.getHistory(),
+        apiModule.getPredictions(),
       ]);
       setHistory(histRes);
       setPrediction(predRes);
+      setDataFetched(true);
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
       setLoading(false);
     }
+  }, [activePage, dataFetched]);
+
+  // Effect untuk fetch data hanya ketika halaman Home aktif
+  useEffect(() => {
+    if (activePage === "Home" && !dataFetched) {
+      fetchData();
+    }
+  }, [activePage, dataFetched, fetchData]);
+
+  // Setup interval untuk refresh data hanya di Home
+  useEffect(() => {
+    let interval;
+    if (activePage === "Home" && dataFetched) {
+      interval = setInterval(() => {
+        fetchData();
+      }, 300000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [activePage, dataFetched, fetchData]);
+
+  // Handle navigation dengan smooth transition
+  const handleNavigate = async (page) => {
+    if (page === activePage) return;
+    
+    setIsTransitioning(true);
+    
+    // Delay kecil untuk animasi
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    setActivePage(page);
+    
+    // Reset untuk halaman Home
+    if (page === "Home") {
+      setDataFetched(false);
+    } else {
+      setLoading(false);
+    }
+    
+    setIsTransitioning(false);
   };
 
-  useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 300000); // Refresh setiap 5 menit
-    return () => clearInterval(interval);
-  }, []);
+  // Fungsi untuk navigasi langsung ke Home dengan loading
+  const navigateToHome = () => {
+    handleNavigate("Home");
+  };
 
-  // Sensor Configuration dengan tooltip yang lebih detail
+  // Sensor Configuration
   const sensors = prediction
     ? [
         {
@@ -158,16 +205,123 @@ function App() {
       ]
     : [];
 
+  // Render Dashboard Content
+  const renderDashboard = () => {
+    if (activePage !== "Home") return null;
+    
+    return (
+      <>
+        {/* Header Section dengan animasi */}
+        <div className={`flex flex-col md:flex-row justify-between items-start md:items-end gap-4 transition-all duration-500 ${
+          mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+        }`}>
+          <div>
+            <h1 className="text-3xl font-bold text-slate-800 dark:text-white">
+              Dashboard Monitoring
+            </h1>
+            <p className="text-slate-500 dark:text-slate-400 mt-1">
+              Real-time analysis & AI Forecasting
+            </p>
+          </div>
+          <div className="text-right">
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 transition-all hover:scale-105">
+              <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
+              System Online
+            </span>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="flex flex-col justify-center items-center h-96 space-y-4">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-aruponic-blue"></div>
+            <p className="text-slate-500 dark:text-slate-400">
+              Loading sensor data...
+            </p>
+            <p className="text-sm text-slate-400 dark:text-slate-500">
+              This may take a few seconds
+            </p>
+          </div>
+        ) : (
+          <>
+            {/* Current Status Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 relative z-10">
+              {sensors.map((sensor, index) => (
+                <div
+                  key={sensor.key}
+                  className={`transition-all duration-500 ${
+                    mounted 
+                      ? 'opacity-100 translate-y-0' 
+                      : 'opacity-0 translate-y-4'
+                  }`}
+                  style={{ transitionDelay: `${index * 100}ms` }}
+                >
+                  <SensorCard
+                    title={sensor.title}
+                    value={prediction?.current_conditions?.[sensor.key] || "N/A"}
+                    unit={sensor.unit}
+                    icon={sensor.icon}
+                    colorClass={sensor.color}
+                    tooltip={sensor.tooltip}
+                  />
+                </div>
+              ))}
+            </div>
+
+            {/* AI Prediction Panel */}
+            {prediction && prediction.predictions && (
+              <div className={`transition-all duration-700 relative z-0 ${
+                mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+              }`}>
+                <PredictionPanel predictions={prediction.predictions} />
+              </div>
+            )}
+
+            {/* Historical Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {[
+                { dataKey: "pH", color: "#8b5cf6", title: "pH Trend (6 Hours)" },
+                { dataKey: "temperature", color: "#f97316", title: "Temperature Trend" },
+                { dataKey: "turbidity", color: "#d97706", title: "Turbidity Trend" },
+                { dataKey: "do", color: "#3b82f6", title: "Dissolved Oxygen Trend" },
+              ].map((chart, index) => (
+                <div
+                  key={chart.dataKey}
+                  className={`transition-all duration-500 ${
+                    mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+                  }`}
+                  style={{ transitionDelay: `${400 + index * 100}ms` }}
+                >
+                  <HistoryChart
+                    data={history}
+                    dataKey={chart.dataKey}
+                    color={chart.color}
+                    title={chart.title}
+                  />
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </>
+    );
+  };
+
+  // Jika halaman Landing, tampilkan tanpa sidebar/navbar
+  if (activePage === "Landing") {
+    return <Landing onNavigate={handleNavigate} />;
+  }
+
+  // Layout utama untuk Dashboard dan About
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-300 flex">
+    <div className={`min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-300 flex ${
+      isTransitioning ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
+    } transition-all duration-300`}>
       <Sidebar
         active={activePage}
-        onNavigate={setActivePage}
+        onNavigate={handleNavigate}
         onClose={() => setSidebarOpen(false)}
         isOpen={sidebarOpen}
       />
-      
-      {/* HAPUS FLOATING BUTTON DI SINI - hanya gunakan tombol di Navbar */}
       
       <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-0' : 'md:ml-0'}`}>
         <Navbar
@@ -179,106 +333,26 @@ function App() {
 
         <main className="container mx-auto px-4 py-8 space-y-8">
           {activePage === "About Us" ? (
-            <About />
-          ) : (
-            <>
-              {/* Header Section dengan animasi */}
-              <div className={`flex flex-col md:flex-row justify-between items-start md:items-end gap-4 transition-all duration-500 ${
-                mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-              }`}>
-                <div>
-                  <h1 className="text-3xl font-bold text-slate-800 dark:text-white">
-                    Dashboard Monitoring
-                  </h1>
-                  <p className="text-slate-500 dark:text-slate-400 mt-1">
-                    Real-time analysis & AI Forecasting
-                  </p>
-                </div>
-                <div className="text-right">
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 transition-all hover:scale-105">
-                    <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
-                    System Online
-                  </span>
-                </div>
+            <Suspense fallback={
+              <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-aruponic-blue"></div>
               </div>
-
-              {loading ? (
-                <div className="flex justify-center items-center h-64">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-aruponic-blue"></div>
-                </div>
-              ) : (
-                <>
-                  {/* Current Status Grid dengan animasi bertahap */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 relative z-10">
-                    {sensors.map((sensor, index) => (
-                      <div
-                        key={sensor.key}
-                        className={`transition-all duration-500 ${
-                          mounted 
-                            ? 'opacity-100 translate-y-0' 
-                            : 'opacity-0 translate-y-4'
-                        }`}
-                        style={{ transitionDelay: `${index * 100}ms` }}
-                      >
-                        <SensorCard
-                          title={sensor.title}
-                          value={prediction.current_conditions[sensor.key]}
-                          unit={sensor.unit}
-                          icon={sensor.icon}
-                          colorClass={sensor.color}
-                          tooltip={sensor.tooltip}
-                        />
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* AI Prediction Panel dengan animasi */}
-                  {prediction && prediction.predictions && (
-                    <div className={`transition-all duration-700 relative z-0 ${
-                      mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-                    }`}>
-                      <PredictionPanel predictions={prediction.predictions} />
-                    </div>
-                  )}
-
-                  {/* Historical Charts dengan animasi */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {[
-                      { dataKey: "pH", color: "#8b5cf6", title: "pH Trend (6 Hours)" },
-                      { dataKey: "temperature", color: "#f97316", title: "Temperature Trend" },
-                      { dataKey: "turbidity", color: "#d97706", title: "Turbidity Trend" },
-                      { dataKey: "do", color: "#3b82f6", title: "Dissolved Oxygen Trend" },
-                    ].map((chart, index) => (
-                      <div
-                        key={chart.dataKey}
-                        className={`transition-all duration-500 ${
-                          mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-                        }`}
-                        style={{ transitionDelay: `${400 + index * 100}ms` }}
-                      >
-                        <HistoryChart
-                          data={history}
-                          dataKey={chart.dataKey}
-                          color={chart.color}
-                          title={chart.title}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-            </>
-          )}
+            }>
+              <About />
+            </Suspense>
+          ) : renderDashboard()}
         </main>
 
-        {/* Footer dengan animasi */}
-        <footer className={`border-t border-slate-200 dark:border-slate-800 mt-12 py-8 text-center transition-all duration-500 ${
-          mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-        }`}>
-          <p className="text-slate-500 dark:text-slate-400 text-sm">
-            © 2025 Aruponic AI. Boost Your Harvest Success.
-          </p>
-        </footer>
+        {/* Footer hanya untuk Dashboard/About */}
+        {activePage !== "Landing" && (
+          <footer className={`border-t border-slate-200 dark:border-slate-800 mt-12 py-8 text-center transition-all duration-500 ${
+            mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+          }`}>
+            <p className="text-slate-500 dark:text-slate-400 text-sm">
+              © 2025 Aruponic AI. Boost Your Harvest Success.
+            </p>
+          </footer>
+        )}
       </div>
     </div>
   );
