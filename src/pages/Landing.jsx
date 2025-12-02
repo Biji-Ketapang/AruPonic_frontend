@@ -8,7 +8,13 @@ import {
   Users, 
   Award, 
   CheckCircle,
-  Play
+  Play,
+  BarChart3,
+  BellRing,
+  UserCheck,
+  Cpu,
+  Settings,
+  ShoppingCart
 } from "lucide-react";
 
 const Landing = ({ onNavigate }) => {
@@ -16,9 +22,7 @@ const Landing = ({ onNavigate }) => {
     <div className="font-sans text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-900 transition-colors duration-300">
       
       {/* ================= HERO SECTION ================= */}
-      {/* Mengadaptasi section .header_slider dari template */}
       <section className="relative h-screen min-h-[600px] flex items-center justify-center overflow-hidden">
-        {/* Background Image with Overlay */}
         <div className="absolute inset-0 z-0">
           <img 
             src="https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80" 
@@ -62,7 +66,6 @@ const Landing = ({ onNavigate }) => {
       </section>
 
       {/* ================= FEATURES SECTION ================= */}
-      {/* Mengadaptasi section #features dari template */}
       <section className="py-20 bg-slate-50 dark:bg-slate-950 relative -mt-20 z-20 rounded-t-[3rem]">
         <div className="container mx-auto px-6">
           <div className="grid md:grid-cols-3 gap-8">
@@ -104,14 +107,13 @@ const Landing = ({ onNavigate }) => {
       </section>
 
       {/* ================= ABOUT SECTION ================= */}
-      {/* Mengadaptasi section #about dari template */}
       <section className="py-20 bg-white dark:bg-slate-900">
         <div className="container mx-auto px-6">
           <div className="flex flex-col lg:flex-row items-center gap-12">
             <div className="lg:w-1/2 relative">
               <div className="relative rounded-2xl overflow-hidden shadow-2xl">
                 <img 
-                  src="https://images.unsplash.com/photo-1527847263472-aa5338d178b8?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80" 
+                  src="aruponic_testing.png" 
                   alt="About Aruponic" 
                   className="w-full"
                 />
@@ -148,16 +150,15 @@ const Landing = ({ onNavigate }) => {
       </section>
 
       {/* ================= COUNTER/STATS SECTION ================= */}
-      {/* Mengadaptasi section #counter dari template */}
       <section className="py-20 bg-aruponic-blue relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
         <div className="container mx-auto px-6 relative z-10">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             {[
-              { icon: Users, val: "500+", label: "Mitra Petani" },
-              { icon: CheckCircle, val: "1.2k", label: "Sensor Terpasang" },
-              { icon: Droplets, val: "5M+", label: "Data Teranalisis" },
-              { icon: Award, val: "12", label: "Penghargaan" },
+              { icon: Users, val: "100+", label: "Mitra Petani" },
+              { icon: CheckCircle, val: "127", label: "Sensor Terpasang" },
+              { icon: Droplets, val: "500K+", label: "Data Teranalisis" },
+              { icon: Award, val: "3", label: "Penghargaan" },
             ].map((stat, idx) => (
               <div key={idx} className="text-white">
                 <div className="bg-white/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
@@ -172,7 +173,6 @@ const Landing = ({ onNavigate }) => {
       </section>
 
       {/* ================= SERVICES/FEATURES LIST ================= */}
-      {/* Mengadaptasi section #services dari template */}
       <section className="py-20 bg-slate-50 dark:bg-slate-950">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
@@ -182,15 +182,41 @@ const Landing = ({ onNavigate }) => {
           
           <div className="grid md:grid-cols-3 gap-8">
             {[
-              { title: "Dashboard Monitoring", icon: "📊", desc: "Visualisasi data pH, Suhu, dan Kekeruhan yang mudah dipahami." },
-              { title: "Notifikasi Cerdas", icon: "🔔", desc: "Terima peringatan via WA/Telegram jika kondisi air memburuk." },
-              { title: "Konsultasi Ahli", icon: "👨‍🌾", desc: "Dukungan langsung dari tim agronomi Aruponic." },
-              { title: "Instalasi Hardware", icon: "🛠️", desc: "Pemasangan sensor dan mikrokontroler di lokasi Anda." },
-              { title: "Maintenance", icon: "⚙️", desc: "Layanan kalibrasi sensor berkala untuk akurasi data." },
-              { title: "Marketplace", icon: "🛒", desc: "Jual hasil panen langsung ke konsumen melalui platform kami." },
+              { 
+                title: "Dashboard Monitoring", 
+                icon: BarChart3, 
+                desc: "Visualisasi data pH, Suhu, dan Kekeruhan yang mudah dipahami." 
+              },
+              { 
+                title: "Notifikasi Cerdas", 
+                icon: BellRing, 
+                desc: "Terima peringatan via WA/Telegram jika kondisi air memburuk." 
+              },
+              { 
+                title: "Konsultasi Ahli", 
+                icon: UserCheck, 
+                desc: "Dukungan langsung dari tim agronomi Aruponic." 
+              },
+              { 
+                title: "Instalasi Hardware", 
+                icon: Cpu, 
+                desc: "Pemasangan sensor dan mikrokontroler di lokasi Anda." 
+              },
+              { 
+                title: "Maintenance", 
+                icon: Settings, 
+                desc: "Layanan kalibrasi sensor berkala untuk akurasi data." 
+              },
+              { 
+                title: "Marketplace", 
+                icon: ShoppingCart, 
+                desc: "Jual hasil panen langsung ke konsumen melalui platform kami." 
+              },
             ].map((service, idx) => (
-              <div key={idx} className="bg-white dark:bg-slate-900 p-8 rounded-xl shadow-sm hover:shadow-lg transition-all border border-slate-100 dark:border-slate-800">
-                <div className="text-4xl mb-4">{service.icon}</div>
+              <div key={idx} className="bg-white dark:bg-slate-900 p-8 rounded-xl shadow-sm hover:shadow-lg transition-all border border-slate-100 dark:border-slate-800 group">
+                <div className="w-14 h-14 bg-aruponic-blue/10 rounded-xl flex items-center justify-center mb-6 group-hover:bg-aruponic-blue/20 transition-colors">
+                  <service.icon className="text-aruponic-blue" size={28} />
+                </div>
                 <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-3">{service.title}</h3>
                 <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed">{service.desc}</p>
               </div>
